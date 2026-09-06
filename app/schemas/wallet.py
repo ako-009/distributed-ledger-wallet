@@ -1,6 +1,5 @@
 from decimal import Decimal
 from typing import Optional
-import uuid
 from pydantic import BaseModel
 
 
@@ -23,3 +22,4 @@ class BalanceResponse(BaseModel):
     wallet_id: str
     balance: Decimal
     currency: str
+    cache_hit: bool = False
