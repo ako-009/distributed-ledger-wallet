@@ -8,6 +8,7 @@ from app.models.wallet import Wallet
 from app.models.transaction import Transaction
 from app.models.ledger_entry import LedgerEntry
 from app.cache.redis_client import invalidate_wallet_cache
+from app.kafka.producer import publish_transaction_event
 
 
 class InsufficientFundsError(Exception):
@@ -89,10 +90,21 @@ async def transfer(
     db.add(debit_entry)
     db.add(credit_entry)
 
+    # Step 7: Commit to DB (ACID)
     await db.commit()
 
-    # Invalidate Redis cache for both wallets after transfer
+    # Step 8: Invalidate Redis cache
     await invalidate_wallet_cache(sender_wallet_id)
     await invalidate_wallet_cache(receiver_wallet_id)
+
+    # Step 9: Publish to Kafka (after DB commit)
+    # If Kafka fails, transfer is still complete — just logged locally
+    await publish_transaction_event(
+        transaction_id=str(transaction.id),
+        sender_wallet_id=sender_wallet_id,
+        receiver_wallet_id=receiver_wallet_id,
+        amount=amount,
+        status="completed"
+    )
 
     return transaction
