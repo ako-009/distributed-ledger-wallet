@@ -1,12 +1,11 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from fastapi import FastAPI
 
-from app.api.routes import auth
+from app.api.routes import auth, wallet, transactions, ledger
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Runs on startup and shutdown."""
     print("Starting up Distributed Ledger API...")
     yield
     print("Shutting down...")
@@ -19,11 +18,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Register routers
 app.include_router(auth.router)
+app.include_router(wallet.router)
+app.include_router(transactions.router)
+app.include_router(ledger.router)
 
 
 @app.get("/health")
 async def health_check():
-    """Basic health check endpoint."""
     return {"status": "healthy", "service": "distributed-ledger-api"}
